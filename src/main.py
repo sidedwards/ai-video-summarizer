@@ -123,15 +123,16 @@ def create_video_clips(transcript, meeting_minutes, source_file, dest_folder, co
 
     For each topic:
     1. Find the segment that best represents the topic.
-    2. If the segment is longer than 2 minutes, trim it to the most relevant 2-minute portion.
-    3. Ensure that the segment starts and ends at natural breaks in the conversation.
+    2. Aim for a clip duration of 2-5 minutes, but prioritize capturing the complete discussion of the topic.
+    3. If the relevant content exceeds 5 minutes, include it entirely to avoid cutting off important information.
+    4. Ensure that the segment starts and ends at natural breaks in the conversation.
 
     Provide the results as a JSON array of objects, each containing:
     - title: The topic title
     - start: Start time of the clip (in seconds)
     - end: End time of the clip (in seconds)
 
-    The clips should not overlap.
+    The clips can overlap if necessary to capture complete discussions.
     """
 
     clip_generation_data = {
@@ -172,33 +173,32 @@ def execute_ffmpeg_commands(commands):
     for command in commands.split('&&'):
         subprocess.run(command.strip(), shell=True, check=True)
 
-def main():
+def main(video_file, progress_callback=None):
     try:
-        logging.info("Starting main function")
+        if progress_callback:
+            progress_callback("Starting transcription process", 0)
         
         config = load_config()
-        logging.info("Configuration loaded successfully")
         
-        video_file = prompt_for_file('.mp4')
-        if video_file is None:
-            logging.error("No video file selected. Exiting.")
-            return
-        logging.info(f"Selected video file: {video_file}")
-        
+        if progress_callback:
+            progress_callback("Uploading video to S3", 10)
         upload_to_s3(video_file, config)
-        logging.info("Video file uploaded to S3")
         
+        if progress_callback:
+            progress_callback("Getting presigned URL", 20)
         presigned_url = get_s3_presigned_url(os.path.basename(video_file), config)
-        logging.info("Got presigned URL for the video file")
         
+        if progress_callback:
+            progress_callback("Starting transcription", 30)
         prediction = start_transcription(presigned_url, config)
-        logging.info("Transcription process started")
         
+        if progress_callback:
+            progress_callback("Processing transcription", 40)
         transcript = get_transcription_result(prediction['urls']['get'], config)
-        logging.info("Transcription completed")
         
+        if progress_callback:
+            progress_callback("Generating meeting minutes", 60)
         meeting_minutes = generate_meeting_minutes(transcript, config)
-        logging.info("Meeting minutes generated")
         
         meeting_name = os.path.splitext(os.path.basename(video_file))[0]
         meeting_folder = os.path.join(os.path.dirname(video_file), meeting_name)
@@ -206,19 +206,21 @@ def main():
         
         with open(os.path.join(meeting_folder, f"{meeting_name}.md"), 'w') as f:
             f.write(meeting_minutes)
-        logging.info(f"Created {meeting_name}.md")
-
+        
+        if progress_callback:
+            progress_callback("Creating video clips", 80)
         ffmpeg_commands = create_video_clips(transcript, meeting_minutes, video_file, meeting_folder, config)
-        logging.info("FFmpeg commands generated")
-
+        
         execute_ffmpeg_commands(ffmpeg_commands)
-        logging.info("Video clips created")
-
-        logging.info("Main function completed successfully")
-    
+        
+        if progress_callback:
+            progress_callback("Process complete", 100)
+        
     except Exception as e:
         logging.error(f"An error occurred: {str(e)}", exc_info=True)
+        raise
 
 if __name__ == "__main__":
-    main()
-
+    video_file = prompt_for_file('.mp4')
+    if video_file:
+        main(video_file)
