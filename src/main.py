@@ -1,6 +1,7 @@
 import os
 import logging
 import json
+import re
 import requests
 import time
 import subprocess
@@ -90,7 +91,7 @@ def create_video_clips(transcript, meeting_minutes, source_file, dest_folder, co
     }
     
     topic_extraction_data = {
-        "model": "claude-3-opus-20240229",
+        "model": config['anthropic_model'],
         "max_tokens": 1000,
         "messages": [
             {"role": "user", "content": topic_extraction_message}
@@ -98,7 +99,19 @@ def create_video_clips(transcript, meeting_minutes, source_file, dest_folder, co
     }
     
     topic_response = requests.post(config['anthropic_api_url'], headers=headers, json=topic_extraction_data)
-    topics = json.loads(topic_response.json()['content'][0]['text'])
+    topic_text = topic_response.json()['content'][0]['text']
+    
+    # Try to extract JSON from the response
+    try:
+        topics = json.loads(topic_text)
+    except json.JSONDecodeError:
+        # If JSON parsing fails, try to extract the relevant information using regex
+        topic_pattern = r'\{\s*"title":\s*"([^"]+)",\s*"keywords":\s*\[((?:[^]]+))\]\s*\}'
+        matches = re.findall(topic_pattern, topic_text)
+        topics = [{"title": title, "keywords": [k.strip(' "') for k in keywords.split(',')]} for title, keywords in matches]
+
+    if not topics:
+        raise ValueError("Failed to extract topics from the AI response")
 
     # Now, let's find relevant segments for each topic
     clip_generation_message = f"""
@@ -122,7 +135,7 @@ def create_video_clips(transcript, meeting_minutes, source_file, dest_folder, co
     """
 
     clip_generation_data = {
-        "model": "claude-3-opus-20240229",
+        "model": config['anthropic_model'],
         "max_tokens": 2000,
         "messages": [
             {"role": "user", "content": clip_generation_message}
@@ -130,7 +143,19 @@ def create_video_clips(transcript, meeting_minutes, source_file, dest_folder, co
     }
 
     clip_response = requests.post(config['anthropic_api_url'], headers=headers, json=clip_generation_data)
-    clips = json.loads(clip_response.json()['content'][0]['text'])
+    clip_text = clip_response.json()['content'][0]['text']
+
+    # Try to extract JSON from the response
+    try:
+        clips = json.loads(clip_text)
+    except json.JSONDecodeError:
+        # If JSON parsing fails, try to extract the relevant information using regex
+        clip_pattern = r'\{\s*"title":\s*"([^"]+)",\s*"start":\s*(\d+(?:\.\d+)?),\s*"end":\s*(\d+(?:\.\d+)?)\s*\}'
+        matches = re.findall(clip_pattern, clip_text)
+        clips = [{"title": title, "start": float(start), "end": float(end)} for title, start, end in matches]
+
+    if not clips:
+        raise ValueError("Failed to extract clip information from the AI response")
 
     # Generate FFmpeg commands
     ffmpeg_commands = []
