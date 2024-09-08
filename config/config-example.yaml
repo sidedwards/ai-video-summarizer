@@ -1,0 +1,9 @@
+aws_cli_path: /path/to/aws
+s3_bucket: your-s3-bucket-name
+replicate_api_key: your-replicate-api-key
+replicate_api_url: https://api.replicate.com/v1/predictions
+replicate_model_version: your-replicate-model-version
+huggingface_token: your-huggingface-token
+anthropic_api_key: your-anthropic-api-key
+anthropic_api_url: https://api.anthropic.com/v1/messages
+
