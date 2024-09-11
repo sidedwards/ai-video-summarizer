@@ -1,36 +1,32 @@
-# AI Meeting Transcriber and Summarizer
+# AI Video Summarizer
 
-This project automates the process of transcribing meeting recordings, generating detailed minutes, and creating video clips for each discussion topic using AI technologies.
-
-## Tech Stack
-
-- Python 3.8+
-- AWS S3 for file storage
-- Replicate API for running WhisperX (transcription)
-- Anthropic's Claude API for generating meeting minutes and video clip commands
-- FFmpeg for video processing
+Transcribe, summarize, and create smart clips from video and audio content.
 
 ## Features
 
-- Transcribe meeting recordings using WhisperX
-- Generate detailed meeting minutes using Claude AI
-- Create video clips for each main discussion topic
-- Upload and manage files using AWS S3
+- **Transcription**: Transcribe audio using WhisperX
+- **Smart Summarization**: Generate concise summaries of video content, tailored to different purposes:
+  - Meeting Minutes
+  - Podcast Summaries
+  - Lecture Notes
+  - Interview Highlights
+  - General Content Summaries
+- **Intelligent Clip Creation**: Automatically create clips of key moments and topics discussed in the video.
+- **Multi-format Support**: Process various video and audio file formats.
+- **Cloud Integration**: Utilizes AWS S3 for efficient file handling and processing.
 
 ## Prerequisites
 
-Before you begin, ensure you have the following installed:
+- Python 3.8+
+- AWS CLI configured with appropriate permissions
+- FFmpeg installed on your system
 
-- Python 3.8 or higher
-- [AWS CLI](https://aws.amazon.com/cli/)
-- [FFmpeg](https://ffmpeg.org/)
-
-## Setup
+## Installation
 
 1. Clone the repository:
    ```
-   git clone https://github.com/sidedwards/ai-meeting-transcriber.git
-   cd ai-meeting-transcriber
+   git clone https://github.com/sidedwards/ai-video-summarizer.git
+   cd ai-video-summarizer
    ```
 
 2. Create and activate a virtual environment:
@@ -48,21 +44,6 @@ Before you begin, ensure you have the following installed:
    - Copy `config/config-example.yaml` to `config/config.yaml`
    - Edit `config/config.yaml` with your API keys and preferences
 
-5. Obtain necessary API keys and credentials:
-   - AWS: Set up an AWS account and configure the AWS CLI with your credentials
-   - Replicate: Sign up at [replicate.com](https://replicate.com) and get your API key
-   - Anthropic: Apply for API access at [anthropic.com](https://www.anthropic.com)
-
-## WhisperX
-
-This project uses WhisperX, an advanced version of OpenAI's Whisper model, for transcription. WhisperX offers:
-
-- Accelerated transcription
-- Advanced speaker diarization
-- Improved accuracy in speaker segmentation
-
-The WhisperX model is run via the Replicate API, based on https://github.com/sidedwards/whisperx.
-
 ## Usage
 
 Run the main script:
@@ -71,11 +52,7 @@ Run the main script:
 python src/main.py
 ```
 
-Follow the prompts to select a video file. The script will:
-1. Upload the file to S3
-2. Transcribe the audio
-3. Generate meeting minutes
-4. Create video clips for each main discussion topic
+Follow the prompts to select a video file and choose the type of summary you want to generate.
 
 ## Configuration
 
@@ -86,10 +63,22 @@ Edit `config/config.yaml` to set:
 - Anthropic API key and model choice
 - Other customizable parameters
 
-## Note
-
-Ensure that you have the necessary permissions and quotas for the APIs you're using. Some services may have usage limits or require approval for higher volumes.
-
 ## Contributing
 
 Contributions are welcome! Please feel free to submit a Pull Request.
+
+## License
+
+[MIT License](LICENSE)
+
+## Acknowledgements
+
+### WhisperX
+
+This project uses WhisperX, an advanced version of OpenAI's Whisper model, for transcription. WhisperX offers:
+
+- Accelerated transcription
+- Advanced speaker diarization
+- Improved accuracy in speaker segmentation
+
+The WhisperX model is run via the Replicate API, based on https://github.com/sidedwards/whisperx.
