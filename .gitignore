@@ -16,3 +16,5 @@ config/config.yaml
 .DS_Store
 Thumbs.db
 
+# Debugging
+debug.log

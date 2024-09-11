@@ -1,5 +1,6 @@
 import os
 import logging
+from logging.handlers import RotatingFileHandler
 import json
 import re
 import requests
@@ -9,8 +10,25 @@ from utils import prompt_for_goal, prompt_for_media_file, load_config
 from transcription_goal import TranscriptionGoal
 
 # Set up logging
-logging.basicConfig(level=logging.DEBUG, format='%(asctime)s - %(levelname)s - %(message)s')
+log_file = 'debug.log'
+logging.basicConfig(level=logging.DEBUG,
+                    format='%(asctime)s - %(levelname)s - %(message)s',
+                    handlers=[
+                        RotatingFileHandler(log_file, maxBytes=10000000, backupCount=5),
+                        logging.StreamHandler()
+                    ])
 logger = logging.getLogger(__name__)
+
+def save_debug_info(output_folder, content, topics, clips):
+    debug_file = os.path.join(output_folder, "debug_info.txt")
+    with open(debug_file, "w") as f:
+        f.write("Generated Content:\n")
+        f.write(content)
+        f.write("\n\nExtracted Topics:\n")
+        json.dump(topics, f, indent=2)
+        f.write("\n\nGenerated Clips:\n")
+        json.dump(clips, f, indent=2)
+    logger.info(f"Debug information saved to {debug_file}")
 
 def upload_to_s3(file_path, config):
     logger.debug(f"Uploading file to S3: {file_path}")
@@ -100,6 +118,10 @@ def generate_content(transcript, goal, config):
     logger.debug(f"Sending request to Anthropic API: {config['anthropic_api_url']}")
     response = requests.post(config['anthropic_api_url'], headers=headers, json=data)
     logger.debug(f"Anthropic API response: {response.text}")
+    
+    # Log the full AI response
+    logger.debug(f"Full AI response for content generation:\n{response.json()['content'][0]['text']}")
+    
     return response.json()['content'][0]['text']
 
 def create_media_clips(transcript, content, source_file, dest_folder, goal, config):
@@ -136,6 +158,9 @@ def create_media_clips(transcript, content, source_file, dest_folder, goal, conf
     topic_response = requests.post(config['anthropic_api_url'], headers=headers, json=topic_extraction_data)
     topic_text = topic_response.json()['content'][0]['text']
     
+    # Log the full AI response for topic extraction
+    logger.debug(f"Full AI response for topic extraction:\n{topic_text}")
+    
     # Try to extract JSON from the response
     try:
         topics = json.loads(topic_text)
@@ -160,7 +185,8 @@ def create_media_clips(transcript, content, source_file, dest_folder, goal, conf
     1. Find the part that best represents the topic/segment.
     2. Aim for a clip duration of 2-5 minutes, but prioritize capturing the complete discussion or segment.
     3. If the relevant content exceeds 5 minutes, include it entirely to avoid cutting off important information.
-    4. Ensure that the segment starts and ends at natural breaks in the audio.
+    4. Ensure that the segment captures complete thoughts and ideas. Do not cut off in the middle of a sentence or a speaker's point.
+    5. It's better to include slightly more content than to risk cutting off important information.
 
     Provide the results as a JSON array of objects, each containing:
     - title: The topic/segment title
@@ -181,6 +207,9 @@ def create_media_clips(transcript, content, source_file, dest_folder, goal, conf
     clip_response = requests.post(config['anthropic_api_url'], headers=headers, json=clip_generation_data)
     clip_text = clip_response.json()['content'][0]['text']
 
+    # Log the full AI response for clip generation
+    logger.debug(f"Full AI response for clip generation:\n{clip_text}")
+
     # Try to extract JSON from the response
     try:
         clips = json.loads(clip_text)
@@ -193,18 +222,46 @@ def create_media_clips(transcript, content, source_file, dest_folder, goal, conf
     if not clips:
         raise ValueError("Failed to extract clip information from the AI response")
 
-    # Generate FFmpeg commands
+    def find_sentence_boundary(transcript, time, direction):
+        """
+        Find the nearest sentence boundary in the given direction.
+        direction should be 1 for forward search, -1 for backward search.
+        """
+        sentence_end_punctuation = '.!?'
+        for segment in sorted(transcript, key=lambda x: x['start'], reverse=(direction < 0)):
+            if (direction > 0 and segment['start'] >= time) or (direction < 0 and segment['end'] <= time):
+                text = segment['text']
+                if direction > 0:
+                    if any(text.strip().endswith(p) for p in sentence_end_punctuation):
+                        return segment['end']
+                else:
+                    if any(text.strip().endswith(p) for p in sentence_end_punctuation):
+                        return segment['start']
+        return time  # If no boundary found, return original time
+
+    # Generate FFmpeg commands with intelligent boundaries
     ffmpeg_commands = []
     for clip in clips:
         safe_title = ''.join(c for c in clip['title'] if c.isalnum() or c in (' ', '_')).rstrip()
         safe_title = safe_title.replace(' ', '_')
         output_file = os.path.join(dest_folder, f"{safe_title}{os.path.splitext(source_file)[1]}")
-        command = f"/opt/homebrew/bin/ffmpeg -i {source_file} -ss {clip['start']} -to {clip['end']} -y -c copy {output_file}"
+        
+        # Find nearest sentence boundaries
+        start_time = find_sentence_boundary(transcript, clip['start'], -1)
+        end_time = find_sentence_boundary(transcript, clip['end'], 1)
+        
+        # Add a small buffer (e.g., 0.5 seconds) to account for any slight misalignments
+        buffer = 0.5
+        start_time = max(0, start_time - buffer)
+        end_time += buffer
+
+        command = f"/opt/homebrew/bin/ffmpeg -i {source_file} -ss {start_time:.2f} -to {end_time:.2f} -y -c copy {output_file}"
         ffmpeg_commands.append(command)
 
     logger.debug(f"Generated FFmpeg commands: {ffmpeg_commands}")
-    return ' && '.join(ffmpeg_commands)
+    return ' && '.join(ffmpeg_commands), topics, clips
 
+# Generate FFmpeg commands
 def execute_ffmpeg_commands(commands):
     logger.debug(f"Executing FFmpeg commands: {commands}")
     for command in commands.split('&&'):
@@ -252,8 +309,11 @@ def main(media_file, goal=TranscriptionGoal.GENERAL_TRANSCRIPTION, progress_call
         
         if progress_callback:
             progress_callback("Creating media clips", 80)
-        ffmpeg_commands = create_media_clips(transcript, content, media_file, output_folder, goal, config)
+        ffmpeg_commands, topics, clips = create_media_clips(transcript, content, media_file, output_folder, goal, config)
         
+        # Save debug information
+        save_debug_info(output_folder, content, topics, clips)
+
         execute_ffmpeg_commands(ffmpeg_commands)
         
         if progress_callback:
