@@ -18,3 +18,6 @@ Thumbs.db
 
 # Debugging
 debug.log
+
+downloads/
+src/test/
