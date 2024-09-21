@@ -20,6 +20,7 @@ Transcribe, summarize, and create smart clips from video and audio content.
 - Python 3.8+
 - AWS CLI configured with appropriate permissions
 - FFmpeg installed on your system
+- Node.js and npm (for running the frontend GUI)
 
 ## Installation
 
@@ -29,30 +30,60 @@ Transcribe, summarize, and create smart clips from video and audio content.
    cd ai-video-summarizer
    ```
 
-2. Create and activate a virtual environment:
-   ```
-   python -m venv venv
-   source venv/bin/activate  # On Windows, use `venv\Scripts\activate`
-   ```
+2. Set up the backend:
+   - Create and activate a virtual environment:
+     ```
+     python -m venv .venv
+     source .venv/bin/activate  # On Windows, use `.venv\Scripts\activate`
+     ```
+   - Install the required dependencies:
+     ```
+     pip install -r requirements.txt
+     ```
+   - Set up your configuration:
+     - Copy `config/config-example.yaml` to `config/config.yaml`
+     - Edit `config/config.yaml` with your API keys and preferences
 
-3. Install the required dependencies:
-   ```
-   pip install -r requirements.txt
-   ```
-
-4. Set up your configuration:
-   - Copy `config/config-example.yaml` to `config/config.yaml`
-   - Edit `config/config.yaml` with your API keys and preferences
+3. Set up the frontend (optional, for GUI usage):
+   - Navigate to the frontend directory:
+     ```
+     cd frontend
+     ```
+   - Install the required dependencies:
+     ```
+     npm install
+     ```
 
 ## Usage
 
-Run the main script:
+### CLI
 
-```
-python src/main.py
-```
+1. Run the CLI script:
+   ```
+   python backend/cli.py
+   ```
+2. Follow the prompts to select a video file and choose the type of summary you want to generate.
+3. The generated summary files will be saved in a directory named after the input video file.
 
-Follow the prompts to select a video file and choose the type of summary you want to generate.
+### GUI
+
+1. Start the backend server:
+   - Run the backend server:
+     ```
+     python backend/gui.py
+     ```
+2. Start the frontend development server:
+   - In a new terminal window, navigate to the frontend directory:
+     ```
+     cd frontend
+     ```
+   - Run the frontend development server:
+     ```
+     npm run dev
+     ```
+3. Open your web browser and navigate to `http://localhost:5173` to access the AI Video Summarizer GUI.
+4. Use the web interface to upload a video file, select the desired summary type, and start the processing.
+5. Once the processing is complete, you can download the generated summary files as a zip archive.
 
 ## Configuration
 
@@ -62,6 +93,13 @@ Edit `config/config.yaml` to set:
 - Replicate API key and model version
 - Anthropic API key and model choice
 - Other customizable parameters
+
+## Roadmap
+
+- [x] Web-based GUI
+- [x] Basic CLI
+- [ ] More LLM options
+- [ ] Export options for various document formats (PDF, DOCX, etc.)
 
 ## Contributing
 
