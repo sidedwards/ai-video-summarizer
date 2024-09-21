@@ -132,7 +132,7 @@ def create_media_clips(transcript, content, source_file, dest_folder, goal, conf
     Based on the following {goal.value.replace('_', ' ')}:
     {content}
 
-    Extract the main topics or segments discussed.
+    Extract each of the main topics or segments discussed.
 
     For each topic/segment, provide:
     1. A short, descriptive title (max 5 words)

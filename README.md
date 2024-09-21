@@ -63,6 +63,13 @@ Edit `config/config.yaml` to set:
 - Anthropic API key and model choice
 - Other customizable parameters
 
+## Roadmap
+
+- Web-based GUI
+- Enhanced CLI
+- Export options for various document formats (PDF, DOCX, etc.)
+- More LLM options
+
 ## Contributing
 
 Contributions are welcome! Please feel free to submit a Pull Request.
