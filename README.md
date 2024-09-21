@@ -70,7 +70,7 @@ Transcribe, summarize, and create smart clips from video and audio content.
 1. Start the backend server:
    - Run the backend server:
      ```
-     python backend/gui.py
+     python backend/server.py
      ```
 2. Start the frontend development server:
    - In a new terminal window, navigate to the frontend directory:
