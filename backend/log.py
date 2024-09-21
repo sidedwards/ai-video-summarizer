@@ -5,16 +5,15 @@ import json
 
 
 # Set up logging
-log_file = "debug.log"
-logging.basicConfig(
-    level=logging.DEBUG,
-    format="%(asctime)s - %(levelname)s - %(message)s",
-    handlers=[
-        RotatingFileHandler(log_file, maxBytes=10000000, backupCount=5),
-        logging.StreamHandler(),
-    ],
-)
+logging.basicConfig(level=logging.INFO,
+                    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
+                    handlers=[
+                        RotatingFileHandler('debug.log', maxBytes=10000000, backupCount=5),
+                        logging.StreamHandler()
+                    ])
+logging.getLogger('multipart').setLevel(logging.WARNING)
 logger = logging.getLogger(__name__)
+logger.setLevel(logging.DEBUG)
 
 
 def save_debug_info(output_folder, content, topics, clips):

@@ -1,0 +1,206 @@
+[data-theme="light"],
+:root:not([data-theme="dark"]) {
+    /* Background and Text Colors */
+    --background-color: #ffffff; /* Pure white background */
+    --color: #2d2d2d; /* Dark text for high contrast */
+
+    /* Heading Colors with Cherry Blossom Accents */
+    --h1-color: #ff6f91; /* Vibrant pink */
+    --h2-color: #ff85a1; /* Light pink */
+    --h3-color: #ff9db2; /* Soft pink */
+    --h4-color: #ffaaaf; /* Muted pink */
+    --h5-color: #ffb3bd; /* Pastel pink */
+    --h6-color: #ffc6d1; /* Very light pink */
+
+    /* Primary and Secondary Colors with Cherry Blossom Influence */
+    --primary: #ff6f91; /* Vibrant pink */
+    --primary-hover: #ff527f; /* Slightly darker pink on hover */
+    --primary-focus: #e64a78; /* Deeper pink for focus states */
+    
+    --secondary: #6fb3ff; /* Soft blue complementing cherry blossoms */
+    --secondary-hover: #5ca0e6; /* Slightly darker blue on hover */
+    --secondary-focus: #4b8adf; /* Deeper blue for focus states */
+
+    /* Contrast and Muted Colors */
+    --contrast: #ffffff; /* White for high contrast elements */
+    --muted-color: #7a7a7a; /* Muted dark for less emphasis */
+    --muted-border-color: #e0e0e0; /* Light gray borders */
+
+    /* Form Element Colors */
+    --form-element-background-color: #f9f9f9; /* Light gray background for forms */
+    --form-element-border-color: #e0e0e0; /* Light gray borders */
+    --form-element-color: #2d2d2d; /* Dark text in form elements */
+    --form-element-placeholder-color: #a0a0a0; /* Gray placeholders */
+    --form-element-active-background-color: #f0f0f0; /* Slightly darker background on active */
+    --form-element-active-border-color: #ff6f91; /* Pink border when active */
+    --form-element-focus-color: #2d2d2d; /* Dark text on focus */
+
+    /* Switch Colors */
+    --switch-color: #ff6f91; /* Pink switch */
+    --switch-checked-background-color: #6fb3ff; /* Blue when checked */
+}
+
+[data-theme="dark"],
+:root:not([data-theme="light"]) {
+    /* Heading Colors with Cherry Blossom Accents */
+    --h1-color: #ff6f91; /* Vibrant pink */
+    --h2-color: #ff85a1; /* Light pink */
+    --h3-color: #ff9db2; /* Soft pink */
+    --h4-color: #ffaaaf; /* Muted pink */
+    --h5-color: #ffb3bd; /* Pastel pink */
+    --h6-color: #ffc6d1; /* Very light pink */
+
+    /* Primary and Secondary Colors with Cherry Blossom Influence */
+    --primary: #ff6f91; /* Vibrant pink */
+    --primary-hover: #ff527f; /* Slightly darker pink on hover */
+    --primary-focus: #e64a78; /* Deeper pink for focus states */
+}
+
+/* Additional custom styles */
+body {
+    font-family: 'Fira Code', monospace;
+    background-color: var(--background-color);
+    color: var(--color);
+    transition: background-color 0.3s ease, color 0.3s ease;
+}
+
+h1, h2, h3, h4, h5, h6 {
+    font-weight: 600;
+    margin-top: 1em;
+    margin-bottom: 0.5em;
+    color: inherit; /* Use respective heading colors */
+}
+
+h1 { color: var(--h1-color); }
+h2 { color: var(--h2-color); }
+h3 { color: var(--h3-color); }
+h4 { color: var(--h4-color); }
+h5 { color: var(--h5-color); }
+h6 { color: var(--h6-color); }
+
+button {
+    font-weight: 500;
+    background-color: var(--primary);
+    color: var(--contrast);
+    border: none;
+    padding: 0.5em 1em;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: background-color 0.3s ease, transform 0.2s ease;
+}
+
+button:hover {
+    background-color: var(--primary-hover);
+    transform: translateY(-2px);
+}
+
+button:focus {
+    outline: 2px solid var(--primary-focus);
+    outline-offset: 2px;
+}
+
+.drop-area {
+    background-color: rgba(255, 111, 145, 0.1); /* Light pink background */
+    border: 2px dashed var(--primary);
+    transition: all 0.3s ease;
+    padding: 2em;
+    text-align: center;
+    border-radius: 8px;
+}
+
+.drop-area:hover {
+    background-color: rgba(255, 111, 145, 0.2);
+}
+
+.drop-area.dragover {
+    background-color: rgba(255, 111, 145, 0.3);
+    border-color: var(--primary-focus);
+    box-shadow: 0 0 0 0.2rem rgba(230, 74, 120, 0.5); /* Semi-transparent pink shadow */
+}
+
+.drop-area svg {
+    stroke: var(--primary);
+    width: 50px;
+    height: 50px;
+    margin-bottom: 1em;
+}
+
+.drop-area p {
+    color: var(--primary);
+    margin-bottom: 0;
+    font-size: 1.1em;
+}  
+
+article {
+    background-color: var(--form-element-background-color);
+    border: 1px solid var(--muted-border-color);
+    border-radius: 6px;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+    transition: background-color 0.3s ease, border-color 0.3s ease;
+}
+
+/* Form Elements */
+input, textarea, select {
+    background-color: var(--form-element-background-color);
+    border: 1px solid var(--form-element-border-color);
+    color: var(--form-element-color);
+    padding: 0.5em;
+    border-radius: 4px;
+    transition: border-color 0.3s ease, background-color 0.3s ease;
+}
+
+input::placeholder, textarea::placeholder {
+    color: var(--form-element-placeholder-color);
+}
+
+input:focus, textarea:focus, select:focus {
+    border-color: var(--form-element-active-border-color);
+    background-color: var(--form-element-active-background-color);
+    outline: none;
+}
+
+/* Switch Component */
+.switch {
+    position: relative;
+    display: inline-block;
+    width: 50px;
+    height: 24px;
+}
+
+.switch input {
+    opacity: 0;
+    width: 0;
+    height: 0;
+}
+
+.switch-label {
+    position: absolute;
+    cursor: pointer;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: #ccc;
+    transition: background-color 0.4s;
+    border-radius: 24px;
+}
+
+.switch-label::after {
+    content: "";
+    position: absolute;
+    width: 18px;
+    height: 18px;
+    left: 3px;
+    bottom: 3px;
+    background-color: white;
+    transition: transform 0.4s;
+    border-radius: 50%;
+}
+
+.switch input:checked + .switch-label {
+    background-color: var(--switch-checked-background-color);
+}
+
+.switch input:checked + .switch-label::after {
+    transform: translateX(26px);
+}

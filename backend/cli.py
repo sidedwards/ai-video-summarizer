@@ -57,6 +57,12 @@ def main(
         output_name = os.path.splitext(os.path.basename(media_file))[0]
         output_folder = os.path.join(os.path.dirname(media_file), output_name)
         os.makedirs(output_folder, exist_ok=True)
+        
+        transcription_file = os.path.join(output_folder, f"{output_name}_transcription.txt")
+        with open(transcription_file, 'w') as f:
+            for segment in transcript:
+                f.write(f"{segment['start']} - {segment['end']}: {segment['text']}\n")
+        logger.info(f"Transcription saved to {transcription_file}")
 
         output_file = os.path.join(output_folder, f"{output_name}_{goal.value}.md")
         logger.info(f"Writing content to file: {output_file}")

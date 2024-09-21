@@ -1,4 +1,7 @@
+import json
 import time
+import os
+import re
 
 import requests
 
@@ -90,13 +93,11 @@ def generate_content(transcript, goal, config):
 
 def create_media_clips(transcript, content, source_file, dest_folder, goal, config):
     logger.debug(f"Creating media clips for goal: {goal.value}")
-
-    # Modify the topic extraction message based on the goal
     topic_extraction_message = f"""
     Based on the following {goal.value.replace('_', ' ')}:
     {content}
 
-    Extract the main topics or segments discussed.
+    Extract each of the main topics or segments discussed.
 
     For each topic/segment, provide:
     1. A short, descriptive title (max 5 words)
@@ -104,45 +105,32 @@ def create_media_clips(transcript, content, source_file, dest_folder, goal, conf
 
     Format the response as a JSON array of objects, each containing 'title' and 'keywords' fields.
     """
-
     headers = {
-        "x-api-key": config["anthropic_api_key"],
+        "x-api-key": config['anthropic_api_key'],
         "anthropic-version": "2023-06-01",
-        "content-type": "application/json",
+        "content-type": "application/json"
     }
-
     topic_extraction_data = {
-        "model": config["anthropic_model"],
+        "model": config['anthropic_model'],
         "max_tokens": 1000,
-        "messages": [{"role": "user", "content": topic_extraction_message}],
+        "messages": [
+            {"role": "user", "content": topic_extraction_message}
+        ]
     }
-
-    topic_response = requests.post(
-        config["anthropic_api_url"], headers=headers, json=topic_extraction_data
-    )
-    topic_text = topic_response.json()["content"][0]["text"]
-
-    # Log the full AI response for topic extraction
+    topic_response = requests.post(config['anthropic_api_url'], headers=headers, json=topic_extraction_data)
+    topic_text = topic_response.json()['content'][0]['text']
     logger.debug(f"Full AI response for topic extraction:\n{topic_text}")
 
-    # Try to extract JSON from the response
     try:
         topics = json.loads(topic_text)
     except json.JSONDecodeError:
-        # If JSON parsing fails, try to extract the relevant information using regex
-        topic_pattern = (
-            r'\{\s*"title":\s*"([^"]+)",\s*"keywords":\s*\[((?:[^]]+))\]\s*\}'
-        )
+        topic_pattern = r'\{\s*"title":\s*"([^"]+)",\s*"keywords":\s*\[((?:[^]]+))\]\s*\}'  
         matches = re.findall(topic_pattern, topic_text)
-        topics = [
-            {"title": title, "keywords": [k.strip(' "') for k in keywords.split(",")]}
-            for title, keywords in matches
-        ]
+        topics = [{"title": title, "keywords": [k.strip(' "') for k in keywords.split(',')]} for title, keywords in matches]
 
     if not topics:
         raise ValueError("Failed to extract topics from the AI response")
 
-    # Now, let's find relevant segments for each topic
     clip_generation_message = f"""
     For each of the following topics/segments, find the most relevant part in the transcript:
     {json.dumps(topics)}
@@ -166,77 +154,39 @@ def create_media_clips(transcript, content, source_file, dest_folder, goal, conf
     """
 
     clip_generation_data = {
-        "model": config["anthropic_model"],
+        "model": config['anthropic_model'],
         "max_tokens": 2000,
-        "messages": [{"role": "user", "content": clip_generation_message}],
+        "messages": [
+            {"role": "user", "content": clip_generation_message}
+        ]
     }
 
-    clip_response = requests.post(
-        config["anthropic_api_url"], headers=headers, json=clip_generation_data
-    )
-    clip_text = clip_response.json()["content"][0]["text"]
-
-    # Log the full AI response for clip generation
+    clip_response = requests.post(config['anthropic_api_url'], headers=headers, json=clip_generation_data)
+    clip_text = clip_response.json()['content'][0]['text']
     logger.debug(f"Full AI response for clip generation:\n{clip_text}")
 
-    # Try to extract JSON from the response
     try:
         clips = json.loads(clip_text)
     except json.JSONDecodeError:
-        # If JSON parsing fails, try to extract the relevant information using regex
         clip_pattern = r'\{\s*"title":\s*"([^"]+)",\s*"start":\s*(\d+(?:\.\d+)?),\s*"end":\s*(\d+(?:\.\d+)?)\s*\}'
         matches = re.findall(clip_pattern, clip_text)
-        clips = [
-            {"title": title, "start": float(start), "end": float(end)}
-            for title, start, end in matches
-        ]
+        clips = [{"title": title, "start": float(start), "end": float(end)} for title, start, end in matches]
 
     if not clips:
         raise ValueError("Failed to extract clip information from the AI response")
 
-    def find_sentence_boundary(transcript, time, direction):
-        """
-        Find the nearest sentence boundary in the given direction.
-        direction should be 1 for forward search, -1 for backward search.
-        """
-        sentence_end_punctuation = ".!?"
-        for segment in sorted(
-            transcript, key=lambda x: x["start"], reverse=(direction < 0)
-        ):
-            if (direction > 0 and segment["start"] >= time) or (
-                direction < 0 and segment["end"] <= time
-            ):
-                text = segment["text"]
-                if direction > 0:
-                    if any(text.strip().endswith(p) for p in sentence_end_punctuation):
-                        return segment["end"]
-                else:
-                    if any(text.strip().endswith(p) for p in sentence_end_punctuation):
-                        return segment["start"]
-        return time  # If no boundary found, return original time
-
-    # Generate FFmpeg commands with intelligent boundaries
     ffmpeg_commands = []
     for clip in clips:
-        safe_title = "".join(
-            c for c in clip["title"] if c.isalnum() or c in (" ", "_")
-        ).rstrip()
-        safe_title = safe_title.replace(" ", "_")
-        output_file = os.path.join(
-            dest_folder, f"{safe_title}{os.path.splitext(source_file)[1]}"
-        )
-
-        # Find nearest sentence boundaries
-        start_time = find_sentence_boundary(transcript, clip["start"], -1)
-        end_time = find_sentence_boundary(transcript, clip["end"], 1)
-
-        # Add a small buffer (e.g., 0.5 seconds) to account for any slight misalignments
+        safe_title = ''.join(c for c in clip['title'] if c.isalnum() or c in (' ', '_')).rstrip()
+        safe_title = safe_title.replace(' ', '_')
+        output_file = os.path.join(dest_folder, f"{safe_title}{os.path.splitext(source_file)[1]}")
+        start_time = clip['start']
+        end_time = clip['end']
         buffer = 0.5
         start_time = max(0, start_time - buffer)
         end_time += buffer
-
         command = f"/opt/homebrew/bin/ffmpeg -i {source_file} -ss {start_time:.2f} -to {end_time:.2f} -y -c copy {output_file}"
         ffmpeg_commands.append(command)
 
     logger.debug(f"Generated FFmpeg commands: {ffmpeg_commands}")
-    return " && ".join(ffmpeg_commands), topics, clips
+    return ' && '.join(ffmpeg_commands), topics, clips
