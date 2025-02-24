@@ -12,6 +12,7 @@ from s3 import get_s3_presigned_url, upload_to_s3
 from log import logger, save_debug_info
 from transcription_goal import TranscriptionGoal
 from utils import load_config, prompt_for_goal, prompt_for_media_file
+from exporters import get_exporter
 
 
 # Generate FFmpeg commands
@@ -24,7 +25,10 @@ def execute_ffmpeg_commands(commands):
 
 
 def main(
-    media_file, goal=TranscriptionGoal.GENERAL_TRANSCRIPTION, progress_callback=None
+    media_file, 
+    goal=TranscriptionGoal.GENERAL_TRANSCRIPTION, 
+    progress_callback=None,
+    runtime_config=None
 ):
     try:
         logger.info(f"Starting main process for file: {media_file}")
@@ -32,7 +36,18 @@ def main(
             progress_callback("Starting transcription process", 0)
 
         config = load_config()
-        logger.debug(f"Loaded configuration: {config}")
+        
+        # Merge runtime config if provided
+        if runtime_config:
+            config.update(runtime_config)
+            
+        logger.debug(f"Using configuration: {config}")
+
+        # Get the configured exporter
+        export_format = config.get("export_format")
+        logger.debug(f"Export format from config: '{export_format}'")
+        exporter = get_exporter(export_format)
+        logger.debug(f"Using exporter for format: {export_format or 'markdown'}")
 
         if progress_callback:
             progress_callback("Uploading media to S3", 10)
@@ -58,16 +73,22 @@ def main(
         output_folder = os.path.join(os.path.dirname(media_file), output_name)
         os.makedirs(output_folder, exist_ok=True)
         
-        transcription_file = os.path.join(output_folder, f"{output_name}_transcription.txt")
-        with open(transcription_file, 'w') as f:
-            for segment in transcript:
-                f.write(f"{segment['start']} - {segment['end']}: {segment['text']}\n")
+        # Format transcription content
+        transcription_content = ""
+        for segment in transcript:
+            transcription_content += f"{segment['start']} - {segment['end']}: {segment['text']}\n"
+        
+        # Save transcription using configured exporter
+        transcription_file = os.path.join(output_folder, f"{output_name}_transcription{exporter.get_extension()}")
+        with open(transcription_file, 'wb') as f:
+            f.write(exporter.export(transcription_content))
         logger.info(f"Transcription saved to {transcription_file}")
 
-        output_file = os.path.join(output_folder, f"{output_name}_{goal.value}.md")
+        # Save content using configured exporter
+        output_file = os.path.join(output_folder, f"{output_name}_{goal.value}{exporter.get_extension()}")
         logger.info(f"Writing content to file: {output_file}")
-        with open(output_file, "w") as f:
-            f.write(content)
+        with open(output_file, "wb") as f:
+            f.write(exporter.export(content))
 
         if progress_callback:
             progress_callback("Creating media clips", 80)

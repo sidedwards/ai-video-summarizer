@@ -1,6 +1,7 @@
 <script lang="ts">
   import { onMount, onDestroy } from 'svelte';
   import axios from 'axios';
+  import ConfigOptions from '$lib/ConfigOptions.svelte';
 
   let files: FileList | null = null;
   let goal = 'general_transcription';
@@ -11,6 +12,13 @@
   let dragover = false;
   let processedFiles: string[] = [];
   let fileInputRef: HTMLInputElement;
+  let runtimeConfig = {
+    transcription_model: "replicate",
+    selected_replicate_model: "whisperx",
+    summarization_model: "anthropic",
+    clip_generation_model: "anthropic",
+    export_format: "markdown"
+  };
 
   const goals = [
     'general_transcription',
@@ -26,6 +34,18 @@
     const formData = new FormData();
     formData.append('file', files[0]);
     formData.append('goal', goal);
+    
+    // Add runtime configuration to form data
+    Object.entries(runtimeConfig).forEach(([key, value]) => {
+      formData.append(key, value);
+    });
+
+    // Enhanced logging for debugging
+    console.log('Runtime config:', runtimeConfig);
+    console.log('Form data being sent:');
+    for (let [key, value] of formData.entries()) {
+      console.log(`${key}:`, value instanceof File ? `File: ${value.name}` : value);
+    }
 
     try {
       status = 'uploading';
@@ -37,8 +57,10 @@
           'Content-Type': 'multipart/form-data'
         },
         onUploadProgress: (progressEvent) => {
-          const percentCompleted = Math.round((progressEvent.loaded * 100) / progressEvent.total);
-          progress = percentCompleted;
+          if (progressEvent.total) {
+            const percentCompleted = Math.round((progressEvent.loaded * 100) / progressEvent.total);
+            progress = percentCompleted;
+          }
         }
       });
 
@@ -125,6 +147,13 @@
     fileInputRef.click();
   }
 
+  function handleFileInputChange(e: Event) {
+    const target = e.target as HTMLInputElement;
+    if (target && target.files) {
+      files = target.files;
+    }
+  }
+
   onDestroy(() => {
     if (intervalId) clearInterval(intervalId);
   });
@@ -163,7 +192,7 @@
         type="file" 
         id="file" 
         accept="video/*" 
-        on:change={(e) => files = e.target.files} 
+        on:change={handleFileInputChange} 
         hidden
       >
     </div>
@@ -176,6 +205,8 @@
         {/each}
       </select>
     </label>
+
+    <ConfigOptions bind:config={runtimeConfig} />
 
     <button type="submit" disabled={!files || files.length === 0 || status !== 'idle'}>Upload and Process</button>
   </form>

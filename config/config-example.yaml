@@ -1,9 +1,28 @@
 aws_cli_path: /path/to/aws
 s3_bucket: your-s3-bucket-name
+
+# Replicate model configuration
 replicate_api_key: your-replicate-api-key
 replicate_api_url: https://api.replicate.com/v1/predictions
-replicate_model_version: your-replicate-model-version
+replicate_model_versions:
+  whisperx: "your-replicate-whisperx-model-version"
+  incredibly-fast-whisper: "your-replicate-incredibly-fast-whisper-model-version"
+selected_replicate_model: whisperx
 huggingface_token: your-huggingface-token
+
+# Anthropic 
 anthropic_api_key: your-anthropic-api-key
 anthropic_api_url: https://api.anthropic.com/v1/messages
 
+# OpenAI
+openai_api_key: your-openai-api-key
+openai_api_url: https://api.openai.com/v1/audio/transcriptions   # openAI transcription API (limited to 25mb)
+openai_chat_api_url: https://api.openai.com/v1/chat/completions     # for clip generation
+
+# Model selection
+transcription_model: replicate   # Options: replicate
+clip_generation_model: anthropic   # Options: anthropic, openai
+summarization_model: anthropic   # Options: anthropic, openai
+
+# Export configuration
+export_format: markdown  # Options: markdown, pdf, docx

@@ -98,8 +98,8 @@ Edit `config/config.yaml` to set:
 
 - [x] Web-based GUI
 - [x] Basic CLI
-- [ ] More LLM options
-- [ ] Export options for various document formats (PDF, DOCX, etc.)
+- [x] More LLM options
+- [x] Export options for various document formats (PDF, DOCX, etc.)
 
 ## Contributing
 
@@ -119,4 +119,12 @@ This project uses WhisperX, an advanced version of OpenAI's Whisper model, for t
 - Advanced speaker diarization
 - Improved accuracy in speaker segmentation
 
-The WhisperX model is run via the Replicate API, based on https://github.com/sidedwards/whisperx.
+### Incredibly Fast Whisper
+
+This project also can use Incredibly Fast Whisper, an insanely fast transcription model. Incredibly Fast Whisper offers:
+
+- Even faster transcription
+- Translation features
+- Audio support only
+
+The WhisperX and IncrediblyFastWhisper models are run via the Replicate API, based on https://github.com/sidedwards/whisper & https://github.com/chenxwh/insanely-fast-whisper
